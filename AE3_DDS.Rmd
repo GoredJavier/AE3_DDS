@@ -14,6 +14,7 @@ library(stringr)
 library(swirl)
 library(RCurl)
 library(dplyr)
+library(tidyr)
 ```
 
 ## R Markdown
@@ -40,9 +41,14 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 dt <- read.csv2("./epa-http.csv", sep=' ', header=FALSE)
 
-colnames(dt) <- c("Path","Date", "Protocol", "Status Code", "Size")
+colnames(dt) <- c("Path","Date", "Protocol", "StatusCode", "Size")
 
-dt$status_code <- factor(dt$status_code)
+dt$StatusCode <- as.factor(dt$StatusCode)
+dt$Size <- as.numeric(dt$Size)
 
+dt <- dt %>%
+  separate(Protocol, into = c("Protocol", "Resource", "Version"), sep = " ")
+
+dt$Date <- as.POSIXct(gsub("^\\[|\\]$", "", dt$Date), format="%d:%H:%M:%S")
 
 ```
