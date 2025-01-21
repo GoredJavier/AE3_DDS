@@ -1,0 +1,53 @@
+---
+title: "Practica_3"
+author: "F"
+date: "2025-01-21"
+output: html_document
+
+```{r carga_librerias, include=FALSE}
+library(readr)
+library(stringr)
+library(swirl)
+library(RCurl)
+
+```
+
+# Autores
+
+**Práctica:** Actividad Evaluable 1  
+**Asignatura:** Data Driven Security  
+**Fecha:** `r format(Sys.time(), '%d-%m-%Y')`  
+
+
+|Grupo 1 |  
+|:--------|  
+|Javier Gómez Rodríguez|  
+|Fernando Palma Villanueva|  
+|Mireia Náger Piazuelo| 
+
+
+
+# 1. Data Science
+
+## Pregunta 1
+
+Una vez cargado el Dataset a analizar, comprobando que se cargan las IPs, el Timestamp, la Petición (Tipo, URL y Protocolo), Código de respuesta, y Bytes de reply.
+
+1. Cuales son las dimensiones del dataset cargado (número de filas y columnas)
+2. Valor medio de la columna Bytes
+
+> Primero se carga el fichero epa_http.
+
+```{r carga_epa_http, warning=FALSE, cache=TRUE}
+
+git_epa_http <- getURL("https://raw.githubusercontent.com/GoredJavier/DataDrivenSecurity/refs/heads/main/epa-http.csv")
+epa_http <- read_table(git_epa_http, col_names = FALSE)
+
+epa_http$X6 <- as.factor(epa_http$X6)
+epa_http$X7 <- as.numeric(epa_http$X7)
+
+epa_http$X2 <- as.POSIXct(gsub("^\\[|\\]$", "", epa_http$X2), format="%d:%H:%M:%S")
+
+
+
+
