@@ -5,6 +5,7 @@ date: "2025-01-21"
 output: html_document
 
 ```{r carga_librerias, include=FALSE}
+
 library(readr)
 library(stringr)
 library(swirl)
@@ -38,15 +39,21 @@ Una vez cargado el Dataset a analizar, comprobando que se cargan las IPs, el Tim
 
 > Primero se carga el fichero epa_http.
 
-```{r carga_epa_http, warning=FALSE, cache=TRUE}
+```{r}
 
-git_epa_http <- getURL("https://raw.githubusercontent.com/GoredJavier/DataDrivenSecurity/refs/heads/main/epa-http.csv")
+git_epa_http <- getURL("https://github.com/GoredJavier/AE3_DDS/blob/development/javi/epa-http.csv")
 epa_http <- read_table(git_epa_http, col_names = FALSE)
 
 epa_http$X6 <- as.factor(epa_http$X6)
 epa_http$X7 <- as.numeric(epa_http$X7)
 
 epa_http$X2 <- as.POSIXct(gsub("^\\[|\\]$", "", epa_http$X2), format="%d:%H:%M:%S")
+
+```
+
+
+
+
 
 
 
