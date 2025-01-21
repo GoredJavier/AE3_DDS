@@ -15,6 +15,7 @@ library(swirl)
 library(RCurl)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 ```
 
 ## R Markdown
@@ -60,4 +61,14 @@ tabla_frecuencias <- table(dt$Protocol)
 # Mostrar la tabla de frecuencias
 print(tabla_frecuencias)
 
+```
+```{r Pie chart frecuencia protocolos}
+dt_protocols <- as.data.frame(tabla_frecuencias)
+
+# Crear el gráfico de pastel
+ggplot(dt_protocols, aes(x = "", y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity", width = 1) +  # Crea las barras
+  coord_polar(theta = "y") +  # Convierte las barras en un gráfico circular
+  labs(title = "Gráfico de Pastel de Códigos de Estado") +
+  theme_void()  # Elimina los ejes y fondo para que sea solo un pastel
 ```
