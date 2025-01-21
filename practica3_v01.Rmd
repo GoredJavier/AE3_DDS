@@ -1,0 +1,68 @@
+---
+title: "Práctica AE3"
+author: "Grupo 1"
+date: "`r format(Sys.time(), '%d-%m-%Y')`"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    
+---
+
+```{r carga_librerias, include=FALSE}
+library(readr)
+library(stringr)
+library(swirl)
+library(RCurl)
+
+```
+
+# Autores
+
+**Práctica:** Actividad Evaluable 3  
+**Asignatura:** Data Driven Security  
+**Fecha:** `r format(Sys.time(), '%d-%m-%Y')`  
+
+
+|Grupo 1 |  
+|:--------|  
+|Javier Gómez Rodríguez|  
+|Fernando Palma Villanueva|  
+|Mireia Náger Piazuelo| 
+
+
+# 2. Análisis de logs de servidor usando R (parte II) 
+
+## Obtención y carga de los datos:
+
+Primero se carga el fichero EPA_HTTP y se indican los tipos específicos para cada columna.  
+
+```{r carga_epa_http, cache=TRUE}
+
+git_epa_http <- getURL("https://raw.githubusercontent.com/GoredJavier/DataDrivenSecurity/refs/heads/main/epa-http.csv")
+epa_http <- read_table(git_epa_http, col_names = FALSE)
+
+epa_http$X6 <- as.factor(epa_http$X6)
+epa_http$X7 <- as.numeric(epa_http$X7)
+
+epa_http$X2 <- as.POSIXct(gsub("^\\[|\\]$", "", epa_http$X2), format="%d:%H:%M:%S")
+
+```
+
+## Limpieza de datos
+
+
+## Exploración de datos
+
+
+
+## Análisis de datos
+
+
+## Visualización de resultados
+
+# Clustering de datos
+
+
+
+
