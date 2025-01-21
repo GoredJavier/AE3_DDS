@@ -45,10 +45,19 @@ colnames(dt) <- c("Path","Date", "Protocol", "StatusCode", "Size")
 
 dt$StatusCode <- as.factor(dt$StatusCode)
 dt$Size <- as.numeric(dt$Size)
+dt$Protocol <- as.factor(dt$Protocol)
 
 dt <- dt %>%
   separate(Protocol, into = c("Protocol", "Resource", "Version"), sep = " ")
 
 dt$Date <- as.POSIXct(gsub("^\\[|\\]$", "", dt$Date), format="%d:%H:%M:%S")
+
+```
+```{r Pregunta 5}
+# Obtener la tabla de frecuencias de la columna 'status_code'
+tabla_frecuencias <- table(dt$Protocol)
+
+# Mostrar la tabla de frecuencias
+print(tabla_frecuencias)
 
 ```
