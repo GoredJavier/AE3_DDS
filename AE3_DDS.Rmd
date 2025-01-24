@@ -1,0 +1,105 @@
+---
+title: "Practica 3 Data Driven Security"
+output: html_document
+date: "2025-01-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r carga_librerias, include=FALSE}
+library(readr)
+library(stringr)
+library(swirl)
+library(RCurl)
+library(dplyr)
+library(tidyr)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r Obtención de datos y limpieza}
+
+df <- read.csv2("./epa-http.csv", sep=' ', header=FALSE)
+
+colnames(df) <- c("Path","Date", "Request", "StatusCode", "Size")
+
+df <- df %>%
+  separate(Request, into = c("Type", "Resource", "Version"), sep = " ") %>%
+  separate(Version, into = c("Protocol", "Version"), sep = "/")
+
+df$Date <- as.POSIXct(gsub("^\\[|\\]$", "", df$Date), format="%d:%H:%M:%S")
+
+df$Type <- as.factor(df$Type)
+df$Protocol <- as.factor(df$Protocol)
+df$Version <- as.factor (df$Version)
+df$StatusCode <- as.factor(df$StatusCode)
+df$Size <- as.numeric(df$Size)
+df$Version <- as.factor(df$Version)
+
+```
+
+```{r Numero unico de usuarios}
+
+#Respuestas informativas (100–199),
+#Respuestas satisfactorias (200–299),
+#Redirecciones (300–399),
+#Errores de los clientes (400–499),
+#y errores de los servidores (500–599).
+
+#4. Se pide: Identificar el número único de usuarios que han interactuado
+# directamente con el servidor de forma segregada según si los usuarios
+# han tenido algún tipo de error en las distintas peticiones ofrecidas por el
+# servidor.
+
+# Clasificar usuarios
+resumen_usuarios <- df %>%
+  group_by(Path) %>%
+  reframe(
+    StatusCode = unique(as.numeric(as.character(StatusCode))[as.numeric(as.character(StatusCode)) >= 400])
+  ) 
+
+resultado_final <- resumen_usuarios %>%
+  group_by(StatusCode) %>%
+  reframe(
+    num_usuarios = n())
+
+```
+
+
+
+```{r Pregunta 5}
+# Obtener la tabla de frecuencias de la columna 'status_code'
+tabla_frecuencias <- table(dt$Protocol)
+
+# Mostrar la tabla de frecuencias
+print(tabla_frecuencias)
+
+```
+```{r Pie chart frecuencia protocolos}
+dt_protocols <- as.data.frame(tabla_frecuencias)
+
+# Crear el gráfico de pastel
+ggplot(dt_protocols, aes(x = "", y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity", width = 1) +  # Crea las barras
+  coord_polar(theta = "y") +  # Convierte las barras en un gráfico circular
+  labs(title = "Gráfico de Pastel de Códigos de Estado") +
+  theme_void()  # Elimina los ejes y fondo para que sea solo un pastel
+```
+
