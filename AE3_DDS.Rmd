@@ -15,6 +15,10 @@ library(swirl)
 library(RCurl)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
+library(ggpubr)
+library(ggrepel)
+library(RColorBrewer)
 ```
 
 ## R Markdown
@@ -41,17 +45,34 @@ df <- read.csv2("./epa-http.csv", sep=' ', header=FALSE)
 colnames(df) <- c("Path","Date", "Request", "StatusCode", "Size")
 
 df <- df %>%
-  separate(Request, into = c("Type", "Resource", "Version"), sep = " ") %>%
-  separate(Version, into = c("Protocol", "Version"), sep = "/")
+  separate(Request, into = c("RequestType", "Resource", "Version"), sep = " ") %>%
+  separate(Version, into = c("Protocol", "Version"), sep = "/") 
+
+df$ResourceType <- str_extract(df$Resource, "\\.([a-zA-Z0-9]+)$") %>% 
+      str_remove("^\\.")
+
+
+#df$ResourceType <- mutate(
+#    extension = str_extract(Resource, "\\.([a-zA-Z0-9]+)$") %>% 
+#      str_remove("^\\.")
+#  )
 
 df$Date <- as.POSIXct(gsub("^\\[|\\]$", "", df$Date), format="%d:%H:%M:%S")
 
-df$Type <- as.factor(df$Type)
+df$RequestType <- as.factor(df$RequestType)
 df$Protocol <- as.factor(df$Protocol)
 df$Version <- as.factor (df$Version)
 df$StatusCode <- as.factor(df$StatusCode)
 df$Size <- as.numeric(df$Size)
 df$Version <- as.factor(df$Version)
+df$ResourceType <- as.factor (df$ResourceType)
+
+df <- df %>%
+  select(
+    1:4,                # Las primeras 4 columnas permanecen igual
+    ResourceType,       # Mover la columna específica a la posición 5
+    5:ncol(df)          # Las demás columnas (a partir de la 5) se desplazan hacia la derecha
+  )
 
 ```
 
@@ -85,21 +106,46 @@ resultado_final <- resumen_usuarios %>%
 
 
 ```{r Pregunta 5}
+
+#Analizar los distintos tipos de peticiones HTTP (GET, POST, PUT, DELETE) gestionadas por el servidor, identificando la frecuencia de cada una de estas.
+
 # Obtener la tabla de frecuencias de la columna 'status_code'
-tabla_frecuencias <- table(dt$Protocol)
+tabla_frecuencias <- table(df$RequestType)
 
 # Mostrar la tabla de frecuencias
 print(tabla_frecuencias)
 
+#Repetir el análisis, esta vez filtrando previamente aquellas peticiones correspondientes a recursos ofrecidos de tipo imagen.
+df_imagenes <- df %>%
+  filter(ResourceType %in% c("jpg", "jpeg", "png", "gif", "bmp", "svg"))
+
+tabla_imagenes <- table(df_imagenes$RequestType)
+
+print(tabla_imagenes)
+
 ```
 ```{r Pie chart frecuencia protocolos}
-dt_protocols <- as.data.frame(tabla_frecuencias)
+
+#Añadir colores si podemos
+
+#Pregunta 6: Generar al menos 2 gráficos distintos que permitan visualizar alguna característica relevante de los datos analizados.Estos deberán representar por lo menos 1 o 2 variables diferentes del data frame. Describid el gráfico e indicad cualquier observación destacable que se pueda apreciar gracias a la representación gráfica.
+
+df_protocols <- as.data.frame(tabla_frecuencias)
+colnames(df_protocols) <- c("RequestType","Value")
+df_protocols$Porcentaje <- round(df_protocols$Value/length(df$StatusCode)*100,1)
+
+paleta <- colorRampPalette(brewer.pal(6, "YlGrBu"))
 
 # Crear el gráfico de pastel
-ggplot(dt_protocols, aes(x = "", y = Freq, fill = Var1)) +
-  geom_bar(stat = "identity", width = 1) +  # Crea las barras
+ggplot(df_protocols, aes(x = "", y = Porcentaje, fill = RequestType)) +
+  geom_bar(stat = "identity", width = 0.9) +  # Crea las barras
   coord_polar(theta = "y") +  # Convierte las barras en un gráfico circular
-  labs(title = "Gráfico de Pastel de Códigos de Estado") +
-  theme_void()  # Elimina los ejes y fondo para que sea solo un pastel
+  labs(title = "Porcentaje según tipo de request") +
+  theme_void() + # Elimina los ejes y fondo para que sea solo un pastel
+  geom_text_repel(aes(label=paste0(Porcentaje,"%")), position = position_stack(vjust = 0.5)) + 
+  scale_fill_manual(values=paleta(length(df_protocols$Porcentaje)))
+
+#Falta un gráfico!!
+
 ```
 
