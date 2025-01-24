@@ -1,8 +1,6 @@
----
-title: "Practica_3"
-author: "F"
-date: "2025-01-21"
-output: html_document
+------------------------------------------------------------------------
+
+title: "Practica_3" author: "F" date: "2025-01-21" output: html_document
 
 ```{r carga_librerias, include=FALSE}
 
@@ -15,18 +13,15 @@ library(RCurl)
 
 # Autores
 
-**Práctica:** Actividad Evaluable 1  
-**Asignatura:** Data Driven Security  
-**Fecha:** `r format(Sys.time(), '%d-%m-%Y')`  
+**Práctica:** Actividad Evaluable 1\
+**Asignatura:** Data Driven Security\
+**Fecha:** `r format(Sys.time(), '%d-%m-%Y')`
 
-
-|Grupo 1 |  
-|:--------|  
-|Javier Gómez Rodríguez|  
-|Fernando Palma Villanueva|  
-|Mireia Náger Piazuelo| 
-
-
+| Grupo 1                   |
+|:--------------------------|
+| Javier Gómez Rodríguez    |
+| Fernando Palma Villanueva |
+| Mireia Náger Piazuelo     |
 
 # 1. Data Science
 
@@ -34,8 +29,8 @@ library(RCurl)
 
 Una vez cargado el Dataset a analizar, comprobando que se cargan las IPs, el Timestamp, la Petición (Tipo, URL y Protocolo), Código de respuesta, y Bytes de reply.
 
-1. Cuales son las dimensiones del dataset cargado (número de filas y columnas)
-2. Valor medio de la columna Bytes
+1.  Cuales son las dimensiones del dataset cargado (número de filas y columnas)
+2.  Valor medio de la columna Bytes
 
 > Primero se carga el fichero epa_http.
 
@@ -49,12 +44,16 @@ epa_http$X7 <- as.numeric(epa_http$X7)
 
 epa_http$X2 <- as.POSIXct(gsub("^\\[|\\]$", "", epa_http$X2), format="%d:%H:%M:%S")
 
+
+dt <- read.csv2("https://raw.githubusercontent.com/GoredJavier/DataDrivenSecurity/refs/heads/main/epa-http.csv", sep=' ', header=FALSE)
+
+colnames(dt) <- c("Path","Date", "Protocol", "StatusCode", "Size")
+
+dt$StatusCode <- as.factor(dt$StatusCode)
+dt$Size <- as.numeric(dt$Size)
+
+dt <- separate(dt, Protocol, into = c("Protocol", "Resource", "Version"), sep = " ")
+
+dt$Date <- as.POSIXct(gsub("^\\[|\\]$", "", dt$Date), format="%d:%H:%M:%S")
+
 ```
-
-
-
-
-
-
-
-
