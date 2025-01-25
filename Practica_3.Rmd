@@ -155,7 +155,7 @@ ggplot(df_protocols, aes(x = "", y = Porcentaje, fill = RequestType)) +
 
 ```
 
-```{r Grafico_Request_Time, cache=TRUE}
+```{r #7_Request Vs Time - Grafico en lineas}
 
 # 7. Generar un gráfico que permita visualizar el número de peticiones servidas a lo largo del tiempo.
 
@@ -167,7 +167,7 @@ df_TimeVsRequest$Time1 <- as.POSIXct(df_TimeVsRequest$Time, format="%Y-%m-%d %H:
 
 # Crear la gráfica
 ggplot(df_TimeVsRequest, aes(x = Time1, y = Request, color = RequestType )) +
-  geom_line(Size=1) + # Grafica los valores en lineas
+  geom_line(linewidth = 0.1 ) + # Grafica los valores en lineas
   scale_x_datetime(date_breaks = "1 hour", date_labels = "%Y-%m-%d %H:%M:%S") +  # Mostrar cada hora
   labs(title = "Peticiones Servidas por Tipo a lo Largo del Tiempo",
        x = "Hora",
@@ -183,7 +183,7 @@ ggplot(df_TimeVsRequest, aes(x = Time1, y = Request, color = RequestType )) +
 ```
 
 
-```{r opcion2_7}
+```{r #7_Opcion_2 grafico en barras}
 
 # 7. Generar un gráfico que permita visualizar el número de peticiones servidas a lo largo del tiempo.
 
