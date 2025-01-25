@@ -1,3 +1,8 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
 ------------------------------------------------------------------------
 
 title: "Practica_3" author: "F" date: "2025-01-21" output: html_document
@@ -169,41 +174,14 @@ df_TimeVsRequest$Time <- as.POSIXct(df_TimeVsRequest$Time, format="%Y-%m-%d %H:%
 
 # Crear la gráfica
 ggplot(df_TimeVsRequest, aes(x = Time)) +
-  geom_histogram(binwidth = 3600, fill = "coral", color = "black") +
+  geom_histogram(binwidth = (3600), fill = "coral", color = "black") +
   scale_x_datetime(date_breaks = "2 hours", date_labels = "%Y-%m-%d %H:%M") +
   labs(title = "Histograma de Fechas por Hora",
        x = "Fecha y Hora",
        y = "Frecuencia") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-geom_text(stat = "bin", aes(label = ..count..), binwidth = 3600, hjust= -0.2 , angle = 90)
+geom_text(stat = "bin", aes(label = after_stat(count)), binwidth = (3600), hjust= -0.2 , angle = 90)
 
 
 ```
-
-
-
-
-```{r PRUEBAS, include=FALSE}
-
-
-#df_TimeVsRequest$Request <- as.numeric(df_TimeVsRequest$Request)
-
-#scale_x_discrete(breaks = unique(df_TimeVsRequest$Time)[seq(1, nrow(unique(df_TimeVsRequest)), by = 500)]) + # Mostrar 1 de cada 10 fechas
-  
-
-#scale_x_discrete(breaks = df_TimeVsRequest$Time[df_TimeVsRequest$Request > 10]) +   
-
-#df_TimeVsRequest$Time[df_TimeVsRequest$Request > 5]
-
-
-#df_TimeVsRequest$Time1 <- as.POSIXct(df_TimeVsRequest$Time, format="%Y-%m-%d %H:%M:%S")
-
-#geom_bar(stat = "identity", position = "stack") +
-
-
-
-  
-  
-```
-
