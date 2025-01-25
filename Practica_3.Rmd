@@ -8,6 +8,7 @@ library(readr)
 library(stringr)
 library(swirl)
 library(RCurl)
+library(dplyr)
 library(tidyr)
 
 ```
@@ -37,16 +38,17 @@ Una vez cargado el Dataset a analizar, comprobando que se cargan las IPs, el Tim
 
 ```{r}
 
+df <- read.csv2("https://raw.githubusercontent.com/GoredJavier/DataDrivenSecurity/refs/heads/main/epa-http.csv", sep=' ', header=FALSE)
 
-dt <- read.csv2("https://raw.githubusercontent.com/GoredJavier/DataDrivenSecurity/refs/heads/main/epa-http.csv", sep=' ', header=FALSE)
+colnames(df) <- c("Path","Date", "Protocol", "StatusCode", "Size")
 
-colnames(dt) <- c("Path","Date", "Protocol", "StatusCode", "Size")
+df$StatusCode <- as.factor(df$StatusCode)
+df$Size <- as.numeric(df$Size)
 
-dt$StatusCode <- as.factor(dt$StatusCode)
-dt$Size <- as.numeric(dt$Size)
+df <- separate(df, Protocol, into = c("Protocol", "Resource", "Version"), sep = " ")
 
-dt <- separate(dt, Protocol, into = c("Protocol", "Resource", "Version"), sep = " ")
+df$Date <- as.POSIXct(gsub("^\\[|\\]$", "", df$Date), format="%d:%H:%M:%S")
 
-dt$Date <- as.POSIXct(gsub("^\\[|\\]$", "", dt$Date), format="%d:%H:%M:%S")
+df$Version = as.factor(df$Version)
 
 ```
