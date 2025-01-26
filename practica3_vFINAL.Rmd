@@ -42,7 +42,7 @@ Sys.setlocale("LC_ALL", "es_ES.UTF-8")
 |Mireia Náger Piazuelo| 
 
 
-# 2. Análisis de los logs (parte II)
+# Análisis de los logs (parte II)
 
 ## Obtención, carga y limpieza de los datos 
 
