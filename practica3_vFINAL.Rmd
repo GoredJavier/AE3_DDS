@@ -231,3 +231,30 @@ ggplot(df_kmeans_one_hot, aes(x = NumericDate, y = ResourceLength, color = Clust
 
 ```
 
+Justificación del Análisis de Clústers:
+
+
+En este caso, utilizamos el algoritmo k-means para segmentar las peticiones en función de dos variables relevantes, la "Fecha numérica" (que corresponde a la hora de la petición) y el "Tamaño de la respuesta" (en bytes).
+
+1. Resultados gráficos:
+
+
+-> Con 3 clústers: La segmentación nos produce 3 patrones generales:
+
+-> Clúster 1: peticiones con respuestas grandes, probablemente archivos multimedia o de descarga pesada, en situaciones de alta demanda.
+
+-> Clúster 2: peticiones con respuestas más pequeñas, habituales de archivos estáticos o comunes, en intervalos de baja demanda.
+
+-> Clúster 3: peticiones fuera del uso habitual, errores, recursos con tamaños mínimos o códigos de estado directamente relacionados (404, 500).
+
+-> Con 6 clústers: al dividir las peticiones en más grupos, se produce una segmentación más detalla, con la que somos capaces de detectar picos de actividad de menor envergadura y variaciones en el tamaño de las respuestas que mediante una menor cantidad de clústers serían difíciles de observar.
+
+2. Justificación sobre la elección de k:
+
+
+Utilizar 3 clústers nos da una información general pautas más amplias (por ejemplo, solicitudes grandes frente a pequeñas) mientras que con 6 clústers seremos capaces de llegar a una segmentación más adecuada, a la captación de variaciones más sutiles, y a una información más detallada de las peticiones.
+
+3. Conclusiones:
+
+
+La aplicación de k-means con diferentes k nos permite capturar la información relativa a las pautas generales y al mismo tiempo variaciones de las peticiones si usamos 3 clústers para la información más general y hasta 6 clústers para la más concreta, lo que nos parece esencial para mejorar la comprensión de las peticiones en conjuntos de datos de gran tamaño. 
