@@ -13,12 +13,15 @@ library(readr)
 library(stringr)
 library(swirl)
 library(RCurl)
-library(dplyr)
-library(tidyr)
 library(ggplot2)
 library(ggpubr)
 library(ggrepel)
 library(RColorBrewer)
+library(mltools)
+library(data.table)
+library(tidyr)
+library(dplyr)
+
 ```
 
 ## R Markdown
@@ -67,12 +70,8 @@ df$Size <- as.numeric(df$Size)
 df$Version <- as.factor(df$Version)
 df$ResourceType <- as.factor (df$ResourceType)
 
-df <- df %>%
-  select(
-    1:4,                # Las primeras 4 columnas permanecen igual
-    ResourceType,       # Mover la columna específica a la posición 5
-    5:ncol(df)          # Las demás columnas (a partir de la 5) se desplazan hacia la derecha
-  )
+#Reordenamos la columan ResourceType
+df <- df %>% select(1:4,ResourceType,5:ncol(df))
 
 ```
 
@@ -124,8 +123,7 @@ tabla_imagenes <- table(df_imagenes$RequestType)
 print(tabla_imagenes)
 
 ```
-```{r Pie chart frecuencia protocolos}
-
+```{r Pie chart frecuencia protocolos 2}
 #Añadir colores si podemos
 
 #Pregunta 6: Generar al menos 2 gráficos distintos que permitan visualizar alguna característica relevante de los datos analizados.Estos deberán representar por lo menos 1 o 2 variables diferentes del data frame. Describid el gráfico e indicad cualquier observación destacable que se pueda apreciar gracias a la representación gráfica.
@@ -134,18 +132,140 @@ df_protocols <- as.data.frame(tabla_frecuencias)
 colnames(df_protocols) <- c("RequestType","Value")
 df_protocols$Porcentaje <- round(df_protocols$Value/length(df$StatusCode)*100,1)
 
-paleta <- colorRampPalette(brewer.pal(6, "YlGrBu"))
+paleta <- colorRampPalette(brewer.pal(6, "Blues"))
+```
 
+
+```{r Pie chart frecuencia protocolos}
 # Crear el gráfico de pastel
-ggplot(df_protocols, aes(x = "", y = Porcentaje, fill = RequestType)) +
-  geom_bar(stat = "identity", width = 0.9) +  # Crea las barras
-  coord_polar(theta = "y") +  # Convierte las barras en un gráfico circular
-  labs(title = "Porcentaje según tipo de request") +
-  theme_void() + # Elimina los ejes y fondo para que sea solo un pastel
-  geom_text_repel(aes(label=paste0(Porcentaje,"%")), position = position_stack(vjust = 0.5)) + 
-  scale_fill_manual(values=paleta(length(df_protocols$Porcentaje)))
+#ggplot(df_protocols, aes(x = "", y = Porcentaje, fill = RequestType)) +
+#  geom_bar(stat = "identity", width = 0.9) +  
+#  coord_polar(theta = "y") +  
+#  labs(title = "Porcentaje según tipo de request") +
+#  theme_void() + 
+#  geom_text_repel(aes(label=paste0(Porcentaje,"%")), position = position_stack(vjust = 0.5)) + 
+#  scale_fill_manual(values=paleta(length(df_protocols$Porcentaje)))
 
-#Falta un gráfico!!
+df$ScaledSize <- scale(df$Size)
+
+#Creamos un boxplot
+ggplot(df, aes(x = RequestType, y=ScaledSize)) +
+  geom_boxplot(fill="lightblue", alpha=0.2) +
+  labs(title = "Tipo de petición vs Tama\u00f1o", x="Scaled Size") +
+  xlab("RequestType") + 
+  theme_minimal()
+
+ggplot(df, aes(x = RequestType, y = ScaledSize)) +
+  geom_boxplot(fill = "lightblue", alpha = 0.6) +  # Ajuste de alpha para menos transparencia
+  labs(title = "Tipo de petición vs Tama\u00f1o", x = "Tipo de peticin", y = "Tamao escalado") +  # Etiquetas
+  theme_minimal() +  # Tema minimalista que mantiene los ejes
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),  # Título centrado y más grande
+    axis.title = element_text(size = 12, face = "bold"),  # Títulos de los ejes más grandes
+    axis.text = element_text(size = 10),  # Tama\u00f1o de texto de los ejes
+    panel.grid.major = element_line(color = "gray90", size = 0.5)  # Líneas de la cuadrícula más suaves
+  )
+
+# Mejorar la apariencia con cuadros alrededor de las etiquetas del eje X
+ggplot(df, aes(x = RequestType, y = ScaledSize)) +
+  geom_boxplot(fill = "lightblue", alpha = 0.6) +  # Ajuste de alpha para menos transparencia
+  labs(title = "Tipo de peticin vs Tamao", x = "Tipo de peticin", y = "Tamaoo escalado") +  # Etiquetas
+  theme_minimal() +  # Tema minimalista
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),  # Título centrado y más grande
+    axis.title = element_text(size = 12, face = "bold"),  # Títulos de los ejes más grandes
+    axis.text = element_text(size = 10),  # Tamao de texto de los ejes
+    panel.grid.major = element_line(color = "gray90", size = 0.5),  # Líneas de la cuadrícula más suaves
+    axis.text.x = element_text(
+      size = 12, 
+      face = "bold", 
+      color = "black", 
+      angle = 45, 
+      hjust = 1
+    ),
+    axis.ticks.x = element_line(size = 2, color = "darkblue")  # Poner un borde de color en las etiquetas
+  ) +
+  # Añadir rectángulos como fondo a las etiquetas del eje X
+  geom_text(aes(label = RequestType), position = position_nudge(y = 0.1), size = 4, color = "black")
+
+
+
+
+```
+
+```{r pregunta 7: histograma de peticiones}
+
+# 7. Generar un gráfico que permita visualizar el número de peticiones servidas a lo largo del tiempo.
+
+table_TimeVsRequest <- table(df$Date, df$RequestType)
+df_TimeVsRequest <- as.data.frame(table_TimeVsRequest)
+colnames(df_TimeVsRequest) <- c("Time", "RequestType", "Request")
+df_TimeVsRequest$Time <- as.POSIXct(df_TimeVsRequest$Time, format="%Y-%m-%d %H:%M:%S") # Se convierte la columna time en formato de fecha y hora
+
+# Crear la gráfica
+ggplot(df_TimeVsRequest, aes(x = Time)) +
+  geom_histogram(binwidth = (3600), fill = "coral", color = "black") +
+  scale_x_datetime(date_breaks = "2 hours", date_labels = "%Y-%m-%d %H:%M") +
+  labs(title = "Histograma de Fechas por Hora",
+       x = "Fecha y Hora",
+       y = "Frecuencia") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+geom_text(stat = "bin", aes(label = after_stat(count)), binwidth = (3600), hjust= -0.2 , angle = 90)
+
+```
+
+
+```{r Pregunta 8: k-means}
+
+#Preparamos el dataset con valores númericos
+
+#Eliminamos NA de la columna Size 
+df$Size[is.na(df$Size)] <- 0
+
+#Obtenemos el número de carácteres del recurso y reordenamos
+df$ResourceLength <- nchar(df$Resource)
+df <- df %>% select(1:5,ResourceLength,6:ncol(df))
+
+#Convertimos la fecha y hora a número y reordenamos
+df$NumericDate <- as.numeric(df$Date)
+df <- df %>% select(1:2,NumericDate,3:ncol(df))
+
+# Seleccionamos las columnas númericas y factores
+df_kmeans <- df[, c("NumericDate", "RequestType","ResourceType","ResourceLength","Protocol","Version","StatusCode","Size")]
+
+#Convertimos los factores a números eliminando NA
+df_kmeans_one_hot <- one_hot(as.data.table(df_kmeans), sparsifyNAs = TRUE)
+
+
+# Llamamos a la función kmeans
+set.seed(2025)  
+
+# Se aplica el algoritmo k-means con 3 y 6 clusters, con 25 iteraciones
+resultado_kmeans_3 <- kmeans(df_kmeans_one_hot, centers = 3, iter.max=1000, nstart = 25)
+resultado_kmeans_6 <- kmeans(df_kmeans_one_hot, centers = 6, iter.max=1000, nstart = 25)
+
+# Se agregan los clusters al dataframe con los valores númericos
+df_kmeans_one_hot$Cluster3 <- as.factor(resultado_kmeans_3$cluster)
+df_kmeans_one_hot$Cluster6 <- as.factor(resultado_kmeans_6$cluster)
+
+# Se crean los dos gráficos
+ggplot(df_kmeans_one_hot,aes(x = NumericDate, y = ResourceLength, color = Cluster3)) +
+  geom_point(size = 1, alpha = 0.1) +
+  labs(title = "K-Means con 3 subgrupos",
+       x = "Fecha Númerica",
+       y = "Longitud del recurso",
+       color = "Cluster") +
+  theme_minimal() 
+
+ggplot(df_kmeans_one_hot, aes(x = NumericDate, y = ResourceLength, color = Cluster6)) +
+  geom_point(size = 1, alpha = 0.1) +
+  labs(title = "K-Means con 6 subgrupos",
+       x = "Fecha Númerica",
+       y = "Longitud del recurso",
+       color = "Cluster") +
+  theme_minimal()
+
 
 ```
 
