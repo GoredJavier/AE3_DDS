@@ -1,0 +1,233 @@
+---
+title: "Practica 3 Data Driven Security"
+output: html_document
+date: "2025-01-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r carga_librerias, include=FALSE}
+library(readr)
+library(stringr)
+library(swirl)
+library(RCurl)
+library(ggplot2)
+library(ggpubr)
+library(ggrepel)
+library(RColorBrewer)
+library(mltools)
+library(data.table)
+library(tidyr)
+library(dplyr)
+
+Sys.setlocale("LC_ALL", "es_ES.UTF-8")
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r Obtención de datos y limpieza}
+
+df <- read.csv2("./epa-http.csv", sep=' ', header=FALSE)
+
+colnames(df) <- c("Path","Date", "Request", "StatusCode", "Size")
+
+df <- df %>%
+  separate(Request, into = c("RequestType", "Resource", "Version"), sep = " ") %>%
+  separate(Version, into = c("Protocol", "Version"), sep = "/") 
+
+df$ResourceType <- str_extract(df$Resource, "\\.([a-zA-Z0-9]+)$") %>% 
+      str_remove("^\\.")
+
+df$Date <- as.POSIXct(gsub("^\\[|\\]$", "", df$Date), format="%d:%H:%M:%S")
+
+df$RequestType <- as.factor(df$RequestType)
+df$Protocol <- as.factor(df$Protocol)
+df$Version <- as.factor (df$Version)
+df$StatusCode <- as.factor(df$StatusCode)
+df$Size <- as.numeric(df$Size)
+df$Version <- as.factor(df$Version)
+df$ResourceType <- as.factor (df$ResourceType)
+
+#Reordenamos la columan ResourceType
+df <- df %>% select(1:4,ResourceType,5:ncol(df))
+
+#Preparamos el dataset con valores númericos
+
+#Eliminamos NA de la columna Size 
+df$Size[is.na(df$Size)] <- 0
+
+#Obtenemos el número de carácteres del recurso y reordenamos
+df$ResourceLength <- nchar(df$Resource)
+df <- df %>% select(1:5,ResourceLength,6:ncol(df))
+
+#Convertimos la fecha y hora a número y reordenamos
+df$NumericDate <- as.numeric(df$Date)
+df <- df %>% select(1:2,NumericDate,3:ncol(df))
+
+
+```
+
+```{r Numero unico de usuarios}
+
+#Respuestas informativas (100–199),
+#Respuestas satisfactorias (200–299),
+#Redirecciones (300–399),
+#Errores de los clientes (400–499),
+#y errores de los servidores (500–599).
+
+#4. Se pide: Identificar el número único de usuarios que han interactuado
+# directamente con el servidor de forma segregada según si los usuarios
+# han tenido algún tipo de error en las distintas peticiones ofrecidas por el
+# servidor.
+
+# Clasificar usuarios
+resumen_usuarios <- df %>%
+  group_by(Path) %>%
+  reframe(
+    StatusCode = unique(as.numeric(as.character(StatusCode))[as.numeric(as.character(StatusCode)) >= 400])
+  ) 
+
+resultado_final <- resumen_usuarios %>%
+  group_by(StatusCode) %>%
+  reframe(
+    num_usuarios = n())
+
+```
+
+
+
+```{r Pregunta 5}
+
+#Analizar los distintos tipos de peticiones HTTP (GET, POST, PUT, DELETE) gestionadas por el servidor, identificando la frecuencia de cada una de estas.
+
+# Obtener la tabla de frecuencias de la columna 'status_code'
+tabla_frecuencias <- table(df$RequestType)
+
+# Mostrar la tabla de frecuencias
+print(tabla_frecuencias)
+
+#Repetir el análisis, esta vez filtrando previamente aquellas peticiones correspondientes a recursos ofrecidos de tipo imagen.
+df_imagenes <- df %>%
+  filter(ResourceType %in% c("jpg", "jpeg", "png", "gif", "bmp", "svg"))
+
+tabla_imagenes <- table(df_imagenes$RequestType)
+
+print(tabla_imagenes)
+
+```
+```{r Pie chart frecuencia protocolos 2}
+#Añadir colores si podemos
+
+#Pregunta 6: Generar al menos 2 gráficos distintos que permitan visualizar alguna característica relevante de los datos analizados.Estos deberán representar por lo menos 1 o 2 variables diferentes del data frame. Describid el gráfico e indicad cualquier observación destacable que se pueda apreciar gracias a la representación gráfica.
+
+df_protocols <- as.data.frame(tabla_frecuencias)
+colnames(df_protocols) <- c("RequestType","Value")
+df_protocols$Porcentaje <- round(df_protocols$Value/length(df$StatusCode)*100,1)
+
+paleta <- colorRampPalette(brewer.pal(9, "Blues"))
+```
+
+
+```{r Pregunta 6 - pie chart frecuencia protocolos}
+
+#Se eliminan los tamaños superiores a 25K que pueden desviar la información del gráfico
+df_filtered_size <- df %>% filter(Size <25000)
+
+# Scatterplot para comparar fecha y tamaño
+ggplot(df_filtered_size, aes(x=Date, y=Size) ) +
+  geom_point(alpha=0.01) + 
+  labs(title = "Tamaño de las descargas por fecha", x="Fecha", y="Descargas") +
+  theme_minimal()
+  
+
+# Se añade un gráfico de densidad que muestra la distribución del tamaño de la descarga, cuando es menor de 25.000
+
+ggplot(df_filtered_size, aes(x=Size)) +
+  geom_density(fill="lightblue", color="lightgrey", alpha=0.8) +
+  labs(title = "Densidad de las descargas", x="Tamaño", y="Densidad") +
+  theme_minimal()
+
+
+```
+
+```{r pregunta 7: histograma de peticiones}
+
+# 7. Generar un gráfico que permita visualizar el número de peticiones servidas a lo largo del tiempo.
+
+table_TimeVsRequest <- table(df$Date, df$RequestType)
+df_TimeVsRequest <- as.data.frame(table_TimeVsRequest)
+colnames(df_TimeVsRequest) <- c("Time", "RequestType", "Request")
+df_TimeVsRequest$Time <- as.POSIXct(df_TimeVsRequest$Time, format="%Y-%m-%d %H:%M:%S") # Se convierte la columna time en formato de fecha y hora
+
+# Crear la gráfica
+ggplot(df_TimeVsRequest, aes(x = Time)) +
+  geom_histogram(binwidth = (3600), fill = "lightblue", color = "blue") +
+  scale_x_datetime(date_breaks = "2 hours", date_labels = "%Y-%m-%d %H:%M") +
+  labs(title = "Histograma de Fechas por Hora",
+       x = "Fecha y Hora",
+       y = "Frecuencia") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+geom_text(stat = "bin", aes(label = after_stat(count)), binwidth = (3600), hjust= -0.2 , angle = 90)
+
+```
+
+
+```{r Pregunta 8: k-means}
+
+# Seleccionamos las columnas númericas y factores
+df_kmeans <- df[, c("NumericDate", "RequestType","ResourceType","ResourceLength","Protocol","Version","StatusCode","Size")]
+
+#Convertimos los factores a números eliminando NA
+df_kmeans_one_hot <- one_hot(as.data.table(df_kmeans), sparsifyNAs = TRUE)
+
+
+# Llamamos a la función kmeans
+set.seed(2025)  
+
+# Se aplica el algoritmo k-means con 3 y 6 clusters, con 25 iteraciones
+resultado_kmeans_3 <- kmeans(df_kmeans_one_hot, centers = 3, iter.max=1000, nstart = 25)
+resultado_kmeans_6 <- kmeans(df_kmeans_one_hot, centers = 6, iter.max=1000, nstart = 25)
+
+# Se agregan los clusters al dataframe con los valores númericos
+df_kmeans_one_hot$Cluster3 <- as.factor(resultado_kmeans_3$cluster)
+df_kmeans_one_hot$Cluster6 <- as.factor(resultado_kmeans_6$cluster)
+
+# Se crean los dos gráficos
+ggplot(df_kmeans_one_hot,aes(x = NumericDate, y = ResourceLength, color = Cluster3)) +
+  geom_point(size = 1, alpha = 0.1) +
+  labs(title = "K-Means con 3 subgrupos",
+       x = "Fecha Númerica",
+       y = "Longitud del recurso",
+       color = "Cluster") +
+  theme_minimal() 
+
+ggplot(df_kmeans_one_hot, aes(x = NumericDate, y = ResourceLength, color = Cluster6)) +
+  geom_point(size = 1, alpha = 0.1) +
+  labs(title = "K-Means con 6 subgrupos",
+       x = "Fecha Númerica",
+       y = "Longitud del recurso",
+       color = "Cluster") +
+  theme_minimal()
+
+
+```
+
