@@ -1,12 +1,13 @@
 ---
-title: "Practica 3 Data Driven Security"
-output: html_document
-date: "2025-01-21"
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+title: "Práctica AE3"
+author: "Grupo 1"
+date: "`r format(Sys.time(), '%d-%m-%Y')`"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+---   
+     
 
 ```{r carga_librerias, include=FALSE}
 library(readr)
@@ -21,29 +22,52 @@ library(mltools)
 library(data.table)
 library(tidyr)
 library(dplyr)
+library(DT)
 
 Sys.setlocale("LC_ALL", "es_ES.UTF-8")
 
 ```
 
-## R Markdown
+# Autores
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
+**Práctica:** Actividad Evaluable 3  
+**Asignatura:** Data Driven Security  
+**Fecha:** `r format(Sys.time(), '%d-%m-%Y')`  
 
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+|Grupo 1 |  
+|:--------|  
+|Javier Gómez Rodríguez|  
+|Fernando Palma Villanueva|  
+|Mireia Náger Piazuelo| 
 
-```{r Obtención de datos y limpieza}
+
+# 2. Análisis de los logs (parte II)
+
+## Obtención, carga y limpieza de los datos 
+
+Primero se cargan los logs del servidor, se analizan  y se preparan los datos para el análisis posterior, algunas de las acciones que se han realizado son:
+
+1. Se añade nomenclatura a dada columna y se verifica que cada fila tenga valor
+2. Se transforman los tipos en los más adecuados en cada caso: factores, fechas, cadenas de carácteres y valores numér    azxicos.
+3. Se crean las columnas adicionales que pueden aportar información valiosa a la hora de generar las gráficas, por ejemplo, la fecha en valor númerico o la longitud del recurso solicitado.
+
+Así, descubrimos que se trata de las peticiones HTTP que se realizan sobre un servidor; cada observación en el dataframe incluye la siguiente información:
+
+* Path: Indica el origen de la petición
+* Date: Indica la fecha de la petición
+* NumericDate: Incluye la fecha en formato numérico
+* RequestType: Es un factor que incluye el tipo de petición (GET, POST, HEAD)
+* Resource: Es una cadena de carácteres con el recurso solicitado
+* ResourceType: Factor que muestra el contenido alfanumérico después del último punto de la columna resource; permite identificar las extensiones de los ficheros descargados de tipo imagen. 
+* ResourceLength: Número de carácteres del recurso solicitado (Resource)
+* Protocol: Factor que indica el protocolo utilizado, en el ejemplo, en todos los casos es "HTTP"
+* Version: Factor que indica la versión del protocolo, en el ejemplo existen dos: 0.2 y 1.0
+* StatusCode: Factor que indica el código de estado que ha devuelto la petición (200, 404, etc.)
+* Size: Tamaño de la descarga de la petición, en los casos dónde no se descargan datos (NA), se indica 0
+
+
+```{r Preguntas 1 y 2 y 3 - preparacion de los datos, include=FALSE, cache=TRUE}
 
 df <- read.csv2("./epa-http.csv", sep=' ', header=FALSE)
 
@@ -82,23 +106,23 @@ df <- df %>% select(1:5,ResourceLength,6:ncol(df))
 df$NumericDate <- as.numeric(df$Date)
 df <- df %>% select(1:2,NumericDate,3:ncol(df))
 
+```
+Finalmente obtenemos el dataframe df, que contiene los siguientes valores: 
+
+```{r imprime el df, warning=FALSE, cache=TRUE}
+
+datatable(df)
 
 ```
 
-```{r Numero unico de usuarios}
+## Exploración de los datos
+Para obtener el número único de usuarios se parte de la premisa que los usuarios se corresponden con el origen de la petición (Path) y que los errores son aquellas respuestas (StatusCode) en los rangos 400 y 500. 
 
-#Respuestas informativas (100–199),
-#Respuestas satisfactorias (200–299),
-#Redirecciones (300–399),
-#Errores de los clientes (400–499),
-#y errores de los servidores (500–599).
+A continuación se muestra el código ejecutado, que nos da el número de usuarios únicos que hay por cada tipo de error diferente. 
 
-#4. Se pide: Identificar el número único de usuarios que han interactuado
-# directamente con el servidor de forma segregada según si los usuarios
-# han tenido algún tipo de error en las distintas peticiones ofrecidas por el
-# servidor.
+```{r Pregunta 4 - numero unico de usuarios por estado}
 
-# Clasificar usuarios
+# Clasificación de usuarios
 resumen_usuarios <- df %>%
   group_by(Path) %>%
   reframe(
@@ -111,18 +135,49 @@ resultado_final <- resumen_usuarios %>%
     num_usuarios = n())
 
 ```
+El resultado es:
 
+```{r Pregunta 4 - imprimir la tabla de estados}
 
+print(resultado_final)
 
-```{r Pregunta 5}
+```
 
-#Analizar los distintos tipos de peticiones HTTP (GET, POST, PUT, DELETE) gestionadas por el servidor, identificando la frecuencia de cada una de estas.
+Si lo que se quiere es mostrar los usuarios que no han tenido ningún error, se puede calcular con el siguiente código: 
 
-# Obtener la tabla de frecuencias de la columna 'status_code'
+```{r Pregunta 4 - numero unico de usuarios sin error}
+
+#Primero se localizan los usuarios que tienen error
+usuarios_con_error <- df %>% filter(as.numeric(as.character(StatusCode)) >= 400)
+
+#Se imprime el número único de usuarios con error
+print(paste("Usuarios con error: ", length(unique(usuarios_con_error$Path))))
+
+#Luego se eliminan los usuarios con error del dataframe 
+usuarios_sin_error <- df %>% anti_join(usuarios_con_error, by="Path")
+
+#Se imprime el número único de usuarios sin error
+print(paste("Usuarios sin error: ", length(unique(usuarios_sin_error$Path))))
+
+```
+
+## Análisis de Datos
+
+Se analizan los distintos tipos de petición (GET, POST, PUT, DELETE) que se encuentran en la columna RequestType para identificar la frecuencia de cada una de éstas. Se muestra la tabla resultante a continuación indicando el tipo de petición y el número de peticiones para cada tipo.
+
+```{r Pregunta 5 - analisis de peticiones 1}
+
+# Obtener la tabla de frecuencias de la columna RequestType
 tabla_frecuencias <- table(df$RequestType)
 
 # Mostrar la tabla de frecuencias
 print(tabla_frecuencias)
+
+
+```
+A continuación se muestra la tabla resultante de mostrar la misma información pero para seleccionando los recursos de tipo imagen (i.e. jpg, png, gif, bmp y svg)
+
+```{r Pregunta 5 - analisis de peticiones 2}
 
 #Repetir el análisis, esta vez filtrando previamente aquellas peticiones correspondientes a recursos ofrecidos de tipo imagen.
 df_imagenes <- df %>%
@@ -133,20 +188,21 @@ tabla_imagenes <- table(df_imagenes$RequestType)
 print(tabla_imagenes)
 
 ```
-```{r Pie chart frecuencia protocolos 2}
-#Añadir colores si podemos
 
-#Pregunta 6: Generar al menos 2 gráficos distintos que permitan visualizar alguna característica relevante de los datos analizados.Estos deberán representar por lo menos 1 o 2 variables diferentes del data frame. Describid el gráfico e indicad cualquier observación destacable que se pueda apreciar gracias a la representación gráfica.
+## Visualización de resultados
 
-df_protocols <- as.data.frame(tabla_frecuencias)
-colnames(df_protocols) <- c("RequestType","Value")
-df_protocols$Porcentaje <- round(df_protocols$Value/length(df$StatusCode)*100,1)
+### Pregunta 6 
 
-paleta <- colorRampPalette(brewer.pal(9, "Blues"))
-```
+Para generar los dos gráficos de esta pregunta se han filtrado los valores del df para que solo aparezcan los valores de tamaño menores a 25000, así se puede analizar mejor los datos visualmente. 
+
+El primer gráfico es scattered para analizar los tamaños de descarga en función del tiempo, el gráfico parece indicar que:
+
+* Hay mayor actividad en horario laboral
+* Que en la mayoría de casos la descarga es muy pequeña
+* Existen dos tamaños que parecen más habituales (2500 y 5000) dadas las dos líneas que se muestran en el gráfico
 
 
-```{r Pregunta 6 - pie chart frecuencia protocolos}
+```{r Pregunta 6 - scatered size y date}
 
 #Se eliminan los tamaños superiores a 25K que pueden desviar la información del gráfico
 df_filtered_size <- df %>% filter(Size <25000)
@@ -156,19 +212,27 @@ ggplot(df_filtered_size, aes(x=Date, y=Size) ) +
   geom_point(alpha=0.01) + 
   labs(title = "Tamaño de las descargas por fecha", x="Fecha", y="Descargas") +
   theme_minimal()
-  
 
-# Se añade un gráfico de densidad que muestra la distribución del tamaño de la descarga, cuando es menor de 25.000
+```
+
+El segundo gráfico muestra la densidad del tamaño de ficheros descargados y ahí se confirma que la gran mayoría de peticiones son cercanos a 0; se vuelven a observar los dos picos alrededor de 2500 y 5000.
+
+```{r Pregunta 6 - density size}
+
+# Se añade un gráfico de densidad que muestra la distribución del tamaño de la descarga
 
 ggplot(df_filtered_size, aes(x=Size)) +
   geom_density(fill="lightblue", color="lightgrey", alpha=0.8) +
   labs(title = "Densidad de las descargas", x="Tamaño", y="Densidad") +
   theme_minimal()
 
-
 ```
 
-```{r pregunta 7: histograma de peticiones}
+### Pregunta 7
+
+Se utiliza la función geom_histogram para generar un gráfico que muestre el número de peticiones servidas durante el tiempo, agrupadas por hora.
+
+```{r pregunta 7 - histograma de peticiones, warning=FALSE}
 
 # 7. Generar un gráfico que permita visualizar el número de peticiones servidas a lo largo del tiempo.
 
@@ -190,8 +254,18 @@ geom_text(stat = "bin", aes(label = after_stat(count)), binwidth = (3600), hjust
 
 ```
 
+# Clústering de datos
 
-```{r Pregunta 8: k-means}
+## Pregunta 8
+
+En este caso, utilizamos el algoritmo k-means para segmentar las peticiones en función de dos variables relevantes, la "Fecha numérica" (que corresponde a la hora de la petición) y el "Tamaño de la respuesta" (en bytes); además, se elije un valor de k de 3 y otro de 6 para el ejercicio. 
+
+A continuación se muestra el código que llama a la función k-means; como la tarea de limpieza de datos se ha realizado en la fase 1, aquí solo quedaría pendiente seleccionar del dataframe los valores númericos y llamar a la función one_hot para que transforme los factores. 
+
+A continuación se muestra el código:  
+
+
+```{r Pregunta 8 - k-means, cache=TRUE}
 
 # Seleccionamos las columnas númericas y factores
 df_kmeans <- df[, c("NumericDate", "RequestType","ResourceType","ResourceLength","Protocol","Version","StatusCode","Size")]
@@ -211,17 +285,48 @@ resultado_kmeans_6 <- kmeans(df_kmeans_one_hot, centers = 6, iter.max=1000, nsta
 df_kmeans_one_hot$Cluster3 <- as.factor(resultado_kmeans_3$cluster)
 df_kmeans_one_hot$Cluster6 <- as.factor(resultado_kmeans_6$cluster)
 
+```
+
+### Justificación del Análisis de Clústers:
+
+#### Resultados gráficos:
+
+Con 3 clústers: La segmentación nos produce 3 patrones generales:
+
+* Clúster 1: peticiones con respuestas grandes, probablemente archivos multimedia o de descarga pesada, en situaciones de alta demanda.
+* Clúster 2: peticiones con respuestas más pequeñas, habituales de archivos estáticos o comunes, en intervalos de baja demanda.
+* Clúster 3: peticiones fuera del uso habitual, errores, recursos con tamaños mínimos o códigos de estado directamente relacionados (404, 500).
+* Con 6 clústers: al dividir las peticiones en más grupos, se produce una segmentación más detalla, con la que somos capaces de detectar picos de actividad de menor envergadura y variaciones en el tamaño de las respuestas que mediante una menor cantidad de clústers serían difíciles de observar.
+
+#### Justificación sobre la elección de k:
+
+Utilizar 3 clústers nos da una información general pautas más amplias (por ejemplo, solicitudes grandes frente a pequeñas) mientras que con 6 clústers seremos capaces de llegar a una segmentación más adecuada, a la captación de variaciones más sutiles, y a una información más detallada de las peticiones.
+
+#### Conclusiones:
+
+La aplicación de k-means con diferentes k nos permite capturar la información relativa a las pautas generales y al mismo tiempo variaciones de las peticiones si usamos 3 clústers para la información más general y hasta 6 clústers para la más concreta, lo que nos parece esencial para mejorar la comprensión de las peticiones en conjuntos de datos de gran tamaño. 
+
+#### Grafico resultado k-means de 3 clústeres
+
+```{r Pregunta 8 - gráfico cluster 3, cache=FALSE}
+
 # Se crean los dos gráficos
 ggplot(df_kmeans_one_hot,aes(x = NumericDate, y = ResourceLength, color = Cluster3)) +
-  geom_point(size = 1, alpha = 0.1) +
+  geom_point(size = 1, alpha = 0.05) +
   labs(title = "K-Means con 3 subgrupos",
        x = "Fecha Númerica",
        y = "Longitud del recurso",
        color = "Cluster") +
   theme_minimal() 
 
+```
+
+#### Grafico resultado k-means de 6 clústeres
+
+```{r Pregunta 8 - gráfico cluster 6, cache=FALSE}
+
 ggplot(df_kmeans_one_hot, aes(x = NumericDate, y = ResourceLength, color = Cluster6)) +
-  geom_point(size = 1, alpha = 0.1) +
+  geom_point(size = 1, alpha = 0.05) +
   labs(title = "K-Means con 6 subgrupos",
        x = "Fecha Númerica",
        y = "Longitud del recurso",
@@ -230,31 +335,3 @@ ggplot(df_kmeans_one_hot, aes(x = NumericDate, y = ResourceLength, color = Clust
 
 
 ```
-
-Justificación del Análisis de Clústers:
-
-
-En este caso, utilizamos el algoritmo k-means para segmentar las peticiones en función de dos variables relevantes, la "Fecha numérica" (que corresponde a la hora de la petición) y el "Tamaño de la respuesta" (en bytes).
-
-1. Resultados gráficos:
-
-
--> Con 3 clústers: La segmentación nos produce 3 patrones generales:
-
--> Clúster 1: peticiones con respuestas grandes, probablemente archivos multimedia o de descarga pesada, en situaciones de alta demanda.
-
--> Clúster 2: peticiones con respuestas más pequeñas, habituales de archivos estáticos o comunes, en intervalos de baja demanda.
-
--> Clúster 3: peticiones fuera del uso habitual, errores, recursos con tamaños mínimos o códigos de estado directamente relacionados (404, 500).
-
--> Con 6 clústers: al dividir las peticiones en más grupos, se produce una segmentación más detalla, con la que somos capaces de detectar picos de actividad de menor envergadura y variaciones en el tamaño de las respuestas que mediante una menor cantidad de clústers serían difíciles de observar.
-
-2. Justificación sobre la elección de k:
-
-
-Utilizar 3 clústers nos da una información general pautas más amplias (por ejemplo, solicitudes grandes frente a pequeñas) mientras que con 6 clústers seremos capaces de llegar a una segmentación más adecuada, a la captación de variaciones más sutiles, y a una información más detallada de las peticiones.
-
-3. Conclusiones:
-
-
-La aplicación de k-means con diferentes k nos permite capturar la información relativa a las pautas generales y al mismo tiempo variaciones de las peticiones si usamos 3 clústers para la información más general y hasta 6 clústers para la más concreta, lo que nos parece esencial para mejorar la comprensión de las peticiones en conjuntos de datos de gran tamaño. 
