@@ -109,7 +109,7 @@ df <- df %>% select(1:2,NumericDate,3:ncol(df))
 ```
 Finalmente obtenemos el dataframe df, que contiene los siguientes valores: 
 
-```{r imprime el df, warning=FALSE, cache=TRUE}
+```{r imprime el df, warning=FALSE}
 
 datatable(df)
 
@@ -296,7 +296,8 @@ Con 3 clústers: La segmentación nos produce 3 patrones generales:
 * Clúster 1: peticiones con respuestas grandes, probablemente archivos multimedia o de descarga pesada, en situaciones de alta demanda.
 * Clúster 2: peticiones con respuestas más pequeñas, habituales de archivos estáticos o comunes, en intervalos de baja demanda.
 * Clúster 3: peticiones fuera del uso habitual, errores, recursos con tamaños mínimos o códigos de estado directamente relacionados (404, 500).
-* Con 6 clústers: al dividir las peticiones en más grupos, se produce una segmentación más detalla, con la que somos capaces de detectar picos de actividad de menor envergadura y variaciones en el tamaño de las respuestas que mediante una menor cantidad de clústers serían difíciles de observar.
+
+Con 6 clústers: al dividir las peticiones en más grupos, se produce una segmentación más detalla, con la que somos capaces de detectar picos de actividad de menor envergadura y variaciones en el tamaño de las respuestas que mediante una menor cantidad de clústers serían difíciles de observar.
 
 #### Justificación sobre la elección de k:
 
